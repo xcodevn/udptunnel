@@ -72,3 +72,9 @@ void tun_put_packet(int fd, char *buf, unsigned int buflen)
 		exit(1);
 	}
 }
+
+void tun_xor(char *input, char *password, int len) {
+    int i;
+    int l = strlen(password);
+    for(i = 0; i < len; i++) input[i] = input[i] ^ password[i % l];
+}

@@ -33,11 +33,6 @@
 
 #define PASSPHRASE v[3]
 
-void encryptDecrypt(char *input, int len) {
-    int i;
-    for(i = 0; i < len; i++) input[i] = input[i] ^ 0x50;
-}
-
 int main(int c, char **v)
 {
 	struct sockaddr_in server_addr, from;
@@ -103,7 +98,7 @@ int main(int c, char **v)
 
 		if(FD_ISSET(tun_fd, &rfds)) {
 			buflen = tun_get_packet(tun_fd, tp->data, sizeof(buf)-sizeof(struct tunnel_packet));
-            encryptDecrypt(tp->data, buflen);
+            tun_xor(tp->data, PASSPHRASE, buflen);
 			tp->type = TRAFFIC_PACKET;
 			tp->cmd = 0;
 			socket_put_packet(server_fd, &server_addr, sizeof(server_addr), buf, buflen + sizeof(struct tunnel_packet));
@@ -112,7 +107,7 @@ int main(int c, char **v)
 		if(FD_ISSET(server_fd, &rfds)) {
 			buflen = socket_get_packet(server_fd, &from, &fromlen, buf, sizeof(buf));
 			if(server_addr.sin_addr.s_addr == from.sin_addr.s_addr && server_addr.sin_port == from.sin_port) {
-                encryptDecrypt(tp->data, buflen-sizeof(struct tunnel_packet));
+                tun_xor(tp->data, PASSPHRASE, buflen-sizeof(struct tunnel_packet));
 				tun_put_packet(tun_fd, tp->data, buflen-sizeof(struct tunnel_packet));
             }
 		}

@@ -9,5 +9,6 @@
 int tun_create();
 unsigned int tun_get_packet(int fd, char *buf, unsigned int bufsize);
 void tun_put_packet(int fd, char *buf, unsigned int buflen);
+void tun_xor(char *input, char *password, int len);
 
 #endif
