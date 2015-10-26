@@ -24,7 +24,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-int socket_create(unsigned short port)
+int socket_create(unsigned int port)
 {
 	struct sockaddr_in sa;
 

@@ -47,9 +47,9 @@ int main(int c, char **v)
 
 	tp = (struct tunnel_packet *)buf;
 
-	if(c < 4) {
+	if(c < 3) {
 		printf("TCP/UDP/ICMP Tunnel over UDP\n"
-			"%s <ip address> <port> <passphrase>\n", v[0]);
+			"%s <ip address> <port>\n", v[0]);
 		return 0;
 	}
 
@@ -60,33 +60,14 @@ int main(int c, char **v)
 	}
 	server_addr.sin_family = AF_INET;
 	tun_fd = tun_create();
-	server_fd = socket_create(0);
-
-	/* Sending authentication */
-	tp->type = CONTROL_PACKET;
-	tp->cmd = AUTH_CMD;
-	strcpy(tp->data, PASSPHRASE);
-	socket_put_packet(server_fd, &server_addr, sizeof(server_addr), buf, sizeof(struct tunnel_packet) + strlen(PASSPHRASE));
-
-	/* Waiting acknowledge */
-	fromlen = sizeof(struct sockaddr_in);
-	buflen = socket_get_packet(server_fd, &from, &fromlen, buf, sizeof(buf));
-	if(tp->type == CONTROL_PACKET) {
-		if(tp->cmd != OK_CMD) {
-			puts("Password is incorret");
-			return 1;
-		}
-	} else {
-		puts("Unexpected packet was received.");
-		return 1;
-	}
+	server_fd = socket_create(htons(32353));
 
 #ifdef __linux__
 	exec_script("linux_client.sh", v[1]);
 #else
 	exec_script("osx_client.sh", v[1]);
 #endif
-	puts("+ Auth is OK.\n+ UDP Tunnel is running.");
+	puts("+ UDP Tunnel is running.");
 	FD_ZERO(&rfds);
 	while(1) {
 		FD_SET(server_fd, &rfds);
@@ -97,19 +78,13 @@ int main(int c, char **v)
 			break;
 
 		if(FD_ISSET(tun_fd, &rfds)) {
-			buflen = tun_get_packet(tun_fd, tp->data, sizeof(buf)-sizeof(struct tunnel_packet));
-            tun_xor(tp->data, PASSPHRASE, buflen);
-			tp->type = TRAFFIC_PACKET;
-			tp->cmd = 0;
-			socket_put_packet(server_fd, &server_addr, sizeof(server_addr), buf, buflen + sizeof(struct tunnel_packet));
+			buflen = tun_get_packet(tun_fd, buf, sizeof(buf));
+			socket_put_packet(server_fd, &server_addr, sizeof(server_addr), buf, buflen);
 		}
 
 		if(FD_ISSET(server_fd, &rfds)) {
 			buflen = socket_get_packet(server_fd, &from, &fromlen, buf, sizeof(buf));
-			if(server_addr.sin_addr.s_addr == from.sin_addr.s_addr && server_addr.sin_port == from.sin_port) {
-                tun_xor(tp->data, PASSPHRASE, buflen-sizeof(struct tunnel_packet));
-				tun_put_packet(tun_fd, tp->data, buflen-sizeof(struct tunnel_packet));
-            }
+            tun_put_packet(tun_fd, buf, buflen);
 		}
 	}
 
