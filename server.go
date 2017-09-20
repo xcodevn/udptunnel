@@ -39,6 +39,9 @@ func main() {
 
 	log.Printf("Interface Name: %s\n", ifce.Name())
 
+	hibuffer := make([]byte, 1024)
+	_, addr, _ := conn.ReadFromUDP(hibuffer)
+
 	c1 := make(chan []byte)
 
 	go func() {
@@ -72,7 +75,7 @@ func main() {
 	for {
 		select {
 		case packet := <-c1:
-			conn.Write(packet)
+			conn.WriteToUDP(packet, addr)
 		case buffer := <-c2:
 			ifce.Write(buffer)
 		}

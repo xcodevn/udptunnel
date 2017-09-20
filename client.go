@@ -27,6 +27,7 @@ func main() {
 	defer conn.Close()
 
 	log.Printf("Connected to server\n")
+	conn.Write([]byte("Hi!"))
 
 	ifce, err := water.New(water.Config{
 		DeviceType: water.TUN,
@@ -61,6 +62,8 @@ func main() {
 			if err != nil {
 				log.Fatal(err)
 			}
+
+			log.Printf("UDP Packet Received: % x\n", buffer[:n])
 			c2 <- buffer[:n]
 		}
 	}()
