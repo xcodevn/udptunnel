@@ -41,6 +41,8 @@ func main() {
 
 	hibuffer := make([]byte, 1024)
 	_, addr, _ := conn.ReadFromUDP(hibuffer)
+	log.Printf("Client says: % x\n", hibuffer)
+	conn.WriteToUDP(hibuffer, addr)
 
 	c1 := make(chan []byte)
 
@@ -51,7 +53,7 @@ func main() {
 			if err != nil {
 				log.Fatal(err)
 			}
-			log.Printf("Packet Received: % x\n", packet[:n])
+			// log.Printf("Packet Received: % x\n", packet[:n])
 			c1 <- packet[:n]
 
 		}
@@ -65,7 +67,7 @@ func main() {
 			if err != nil {
 				log.Fatal(err)
 			}
-			log.Printf("UDP Packet Received: % x\n", buffer[:n])
+			// log.Printf("UDP Packet Received: % x\n", buffer[:n])
 			c2 <- buffer[:n]
 		}
 	}()
@@ -76,6 +78,7 @@ func main() {
 		select {
 		case packet := <-c1:
 			conn.WriteToUDP(packet, addr)
+			// log.Printf("Write to UDP\n")
 		case buffer := <-c2:
 			ifce.Write(buffer)
 		}
